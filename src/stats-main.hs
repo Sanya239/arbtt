@@ -167,10 +167,9 @@ main = do
           (_,_,errs) -> do
                 hPutStr stderr (concat errs ++ usageInfo header options)
                 exitFailure
-  tz <- loadLocalTZ
-
   dir <- getAppUserDataDirectory "arbtt"
   flags <- foldl (>>=) (return (defaultOptions dir)) actions
+  tz <- loadLocalTZ
 
   fileEx <- doesFileExist (optCategorizeFile flags)
   unless fileEx $ do
