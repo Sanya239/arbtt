@@ -29,13 +29,16 @@ jobs:
         key: cabal-store-${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('arbtt.cabal') }}
         restore-keys: cabal-store-${{ runner.os }}-${{ matrix.ghc }}-
 
-    - if: runner.os == 'Linux'
-      run: sudo apt-get install libxss-dev libx11-dev libxrandr-dev libxinerama-dev
+    - name: Install native dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends libpcre3-dev pkg-config libxss-dev libx11-dev libxrandr-dev libxinerama-dev
     - name: Build
       run: |
         cabal update
-        cabal build -w ghc-${{ matrix.ghc }}
-        cabal test -w ghc-${{ matrix.ghc }}
+        cabal build -w ghc-${{ matrix.ghc }} '--constraint=pcre-light +use-pkg-config'
+        cabal test -w ghc-${{ matrix.ghc }} '--constraint=pcre-light +use-pkg-config'
 
   docs:
     runs-on: ubuntu-latest
