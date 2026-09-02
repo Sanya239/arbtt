@@ -2,3 +2,5 @@ doc/arbtt.pdf
 doc/man/
 doc/users_guide/
 .stack-work
+dist/
+dist-newstyle/

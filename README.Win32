@@ -1,35 +1,34 @@
 arbtt, the Automatic Rule-Based Time Tracker
 
-(c) 2009-2015 Joachim Breitner <mail@joachim-breitner.de>
+(c) 2009-2026 Joachim Breitner and contributors
 
 The Automatic Rule-Based Time Tracker is a desktop daemon that runs in the background and, every minute, records what windows are open on your desktop, what their titles are, which one is active. The accompanied statistics program lets you derive information from this log file, i.e.  what how much of your time have you been spending with e-Mail, or what projects are your largest time wasters. The mapping from the raw window titles to sensible "tags" is done by a configuration file with an powerful syntax.
 
 At this point, arbtt does not have a graphical user interface. You will see no indication that arbtt-capture is running besides its entry in the task manager.  The statistics can be accessed using the arbtt-stats program from the command line.
 
-If you expect unicode characters to appear in your reports, you likely want to run arbtt-stats and related tools with codepage 65001 (i.e. utf8) enabled.
+The programs use UTF-8 for text output. Windows Terminal and recent PowerShell
+versions display it correctly by default. In legacy cmd.exe, run `chcp 65001`
+before using the reporting tools if non-ASCII text is displayed incorrectly.
 
 Installation
 ============
 
-This installation will put the programs, documentation and example configuration on your computer. It makes sure that arbtt-capture is started after the installation and after the computer restarts. It also adds the arbtt program directory to the system PATH, so that you can use arbtt-stats from the windows command line.
+This installation puts the programs and an example configuration in your user
+profile. By default it starts arbtt-capture after installation and whenever you
+sign in. It can also add the arbtt program directory to your user PATH, so that
+you can run arbtt-stats from Windows Terminal, PowerShell, or cmd.exe. These
+options can be changed on the installer's task page.
 
-The documentation and the file categorize.cfg can be found in the start menu.
+The online documentation and the file categorize.cfg can be opened from the
+Start menu.
 
-You can uninstall arbtt using the provided uninstaller. Please terminate the arbtt-capture process before doing so, using the task manager, which you can start with Alt-Ctrl-Delete.
+You can uninstall arbtt from Windows Settings or its Start menu shortcut. The
+installer asks Windows to close arbtt-capture when upgrading or uninstalling.
 
-Third party components copyright notice
-=======================================
+Third-party component notice
+============================
 
-arbtt ships with pcre3.dll from the PCRE library, copyright 1997-2006 University of Cambridge, governed under this license:
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-    * Neither the name of the University of Cambridge nor the name of Google Inc. nor the names of their contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-The arbtt installer uses the modpath.iss which is (c) 2007 Jared Breland <jbreland@legroom.net>.
+arbtt ships with libpcre-1.dll from PCRE 8.45. PCRE is distributed under the
+3-clause BSD license. Its license is installed in the THIRD-PARTY-LICENSES
+directory. The licenses of the Haskell dependencies remain applicable to their
+respective components.

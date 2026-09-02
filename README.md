@@ -96,27 +96,20 @@ as well.
 Creating the Windows Installer
 ------------------------------
 
-The file `setup.iss` contains an installer script for Inno Setup and can be used
-to create the windows installer for arbtt. It can be used under wine. To build
-arbtt under Windows, you need to install the Haskell Platform. Because the
-Haskell Platform ships an older version of the w32api package from mingw, you
-also need to download `w32api-3.14-mingw32-dev.tar.gz` and copy at least the files
-`include/psapi.h` and `lib/libpsapi.a` over the files installed by the Haskell
-Platform. For the `pcre-light` package, you need to install the `pcre` library.
-Unless you run a German version of Windows, you’ll need to adjust the path to
-the `pcre3.dll` file in `setup.iss`. Install `Inno Setup`. Create the documentation
-(`make -C doc`) and configure arbtt with the `--with-ISCC-flag`:
+The automated Windows build is defined in `.github/workflows/windows.yml`.
+It builds 64-bit binaries with GHC and Cabal, obtains PCRE from MSYS2, runs the
+test suite, creates an Inno Setup installer, and smoke-tests the installed
+programs. The resulting `arbtt-windows-x86_64` workflow artifact contains the
+installer.
 
-    $ wine runhaskell Setup.hs configure --with-ISCC='C:\Programme\Inno Setup 5\ISCC.exe'
+To build the installer locally, install GHC, Cabal, the 64-bit PCRE 8 development
+package and Inno Setup 6. Then run:
 
-again adjusting the path if you do not have a German version of Windows. This
-will put the version name into `setup.iss` and create the output file as
-`dist/arbtt-setup-<version>.exe.`
+    cabal update
+    cabal build all --enable-tests
+    cabal test all
+    powershell -File scripts/build-windows-installer.ps1 -PcreDll C:\path\to\libpcre-1.dll -Iscc 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 
-Download links:
-
- * http://hackage.haskell.org/platform/2009.2.0.2/HaskellPlatform-2009.2.0.2-setup.exe
- * http://sourceforge.net/projects/mingw/files/MinGW%20API%20for%20MS-Windows/
- * http://gnuwin32.sourceforge.net/downlinks/pcre.php
- * http://www.jrsoftware.org/download.php/is-unicode.exe
-
+The installer is written to `dist\installer`. It performs a per-user install,
+does not require administrator privileges, and offers optional PATH and startup
+integration.

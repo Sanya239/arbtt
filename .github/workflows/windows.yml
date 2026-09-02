@@ -1,0 +1,112 @@
+name: Windows installer
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GHC_VERSION: 9.6.7
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-2022
+    timeout-minutes: 60
+
+    steps:
+      - name: Configure Git line endings
+        run: git config --global core.autocrlf input
+
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Set up GHC and Cabal
+        id: haskell
+        uses: haskell-actions/setup@v2
+        with:
+          ghc-version: ${{ env.GHC_VERSION }}
+          cabal-version: latest
+
+      - name: Set up the PCRE native dependency
+        id: msys2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-pcre
+            mingw-w64-ucrt-x86_64-pkgconf
+
+      - name: Cache Cabal packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.haskell.outputs.cabal-store }}
+          key: windows-cabal-${{ env.GHC_VERSION }}-${{ hashFiles('arbtt.cabal') }}
+          restore-keys: |
+            windows-cabal-${{ env.GHC_VERSION }}-
+
+      - name: Build and test
+        shell: pwsh
+        env:
+          MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $ucrtRoot = Join-Path $env:MSYS2_ROOT 'ucrt64'
+          $env:PATH = "$env:PATH;$(Join-Path $ucrtRoot 'bin')"
+          $env:PKG_CONFIG_PATH = Join-Path $ucrtRoot 'lib\pkgconfig'
+          $nativeOptions = @(
+            "--extra-include-dirs=$(Join-Path $ucrtRoot 'include')",
+            "--extra-lib-dirs=$(Join-Path $ucrtRoot 'lib')"
+          )
+          cabal build all --enable-tests @nativeOptions
+          cabal test all --enable-tests --test-show-details=direct @nativeOptions
+
+      - name: Build installer
+        shell: pwsh
+        env:
+          MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
+        run: |
+          $ucrtRoot = Join-Path $env:MSYS2_ROOT 'ucrt64'
+          $pcreDll = Join-Path $ucrtRoot 'bin\libpcre-1.dll'
+          .\scripts\build-windows-installer.ps1 `
+            -PcreDll $pcreDll `
+            -CabalExtraIncludeDir (Join-Path $ucrtRoot 'include') `
+            -CabalExtraLibDir (Join-Path $ucrtRoot 'lib')
+
+      - name: Smoke-test installed programs
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path arbtt.cabal -Pattern '^version:\s*(\S+)').Matches[0].Groups[1].Value
+          $installer = Resolve-Path "dist\installer\arbtt-setup-$version-windows-x86_64.exe"
+          $installDir = Join-Path $env:RUNNER_TEMP 'arbtt-install-test'
+          & $installer /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="modifypath" /DIR="$installDir"
+          if ($LASTEXITCODE -ne 0) { throw "Installer exited with $LASTEXITCODE" }
+
+          $installedBin = Join-Path $installDir 'bin'
+          $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if (($userPath -split ';') -notcontains $installedBin) {
+            throw 'Installer did not add its bin directory to the user PATH.'
+          }
+
+          @('arbtt-capture', 'arbtt-stats', 'arbtt-dump', 'arbtt-import', 'arbtt-recover') |
+            ForEach-Object {
+              & (Join-Path $installDir "bin\$_.exe") --version
+              if ($LASTEXITCODE -ne 0) { throw "$_ --version exited with $LASTEXITCODE" }
+            }
+
+          & (Join-Path $installDir 'unins000.exe') /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+          if ($LASTEXITCODE -ne 0) { throw "Uninstaller exited with $LASTEXITCODE" }
+
+          $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+          if (($userPath -split ';') -contains $installedBin) {
+            throw 'Uninstaller did not remove its bin directory from the user PATH.'
+          }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: arbtt-windows-x86_64
+          path: dist/installer/*.exe
+          if-no-files-found: error
