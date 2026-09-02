@@ -56,9 +56,19 @@ jobs:
           $ucrtRoot = Join-Path $env:MSYS2_ROOT 'ucrt64'
           $env:PATH = "$env:PATH;$(Join-Path $ucrtRoot 'bin')"
           $env:PKG_CONFIG_PATH = Join-Path $ucrtRoot 'lib\pkgconfig'
+          $pcreImportLibrary = Join-Path $ucrtRoot 'lib\libpcre.dll.a'
+          if (-not (Test-Path $pcreImportLibrary)) {
+            throw "PCRE import library was not found at $pcreImportLibrary"
+          }
+          pkg-config --modversion libpcre
+          if ($LASTEXITCODE -ne 0) { throw 'pkg-config could not find libpcre.' }
+
+          $cabalIncludeDir = (Join-Path $ucrtRoot 'include').Replace('\', '/')
+          $cabalLibDir = (Join-Path $ucrtRoot 'lib').Replace('\', '/')
           $nativeOptions = @(
-            "--extra-include-dirs=$(Join-Path $ucrtRoot 'include')",
-            "--extra-lib-dirs=$(Join-Path $ucrtRoot 'lib')"
+            "--extra-include-dirs=$cabalIncludeDir",
+            "--extra-lib-dirs=$cabalLibDir",
+            '--constraint=pcre-light +use-pkg-config'
           )
           cabal build all --enable-tests @nativeOptions
           cabal test all --enable-tests --test-show-details=direct @nativeOptions
@@ -69,11 +79,14 @@ jobs:
           MSYS2_ROOT: ${{ steps.msys2.outputs.msys2-location }}
         run: |
           $ucrtRoot = Join-Path $env:MSYS2_ROOT 'ucrt64'
+          $env:PATH = "$env:PATH;$(Join-Path $ucrtRoot 'bin')"
+          $env:PKG_CONFIG_PATH = Join-Path $ucrtRoot 'lib\pkgconfig'
           $pcreDll = Join-Path $ucrtRoot 'bin\libpcre-1.dll'
           .\scripts\build-windows-installer.ps1 `
             -PcreDll $pcreDll `
             -CabalExtraIncludeDir (Join-Path $ucrtRoot 'include') `
-            -CabalExtraLibDir (Join-Path $ucrtRoot 'lib')
+            -CabalExtraLibDir (Join-Path $ucrtRoot 'lib') `
+            -CabalConstraint 'pcre-light +use-pkg-config'
 
       - name: Smoke-test installed programs
         shell: pwsh

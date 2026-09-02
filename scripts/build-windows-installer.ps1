@@ -2,7 +2,8 @@ param(
     [string] $PcreDll = $env:PCRE_DLL,
     [string] $Iscc = $env:ISCC,
     [string] $CabalExtraIncludeDir = $env:CABAL_EXTRA_INCLUDE_DIR,
-    [string] $CabalExtraLibDir = $env:CABAL_EXTRA_LIB_DIR
+    [string] $CabalExtraLibDir = $env:CABAL_EXTRA_LIB_DIR,
+    [string] $CabalConstraint = $env:CABAL_CONSTRAINT
 )
 
 $ErrorActionPreference = 'Stop'
@@ -32,10 +33,13 @@ $executables = @(
 foreach ($executable in $executables) {
     $listBinArguments = @('list-bin', "exe:$executable", '-v0', '--enable-tests')
     if ($CabalExtraIncludeDir) {
-        $listBinArguments += "--extra-include-dirs=$CabalExtraIncludeDir"
+        $listBinArguments += "--extra-include-dirs=$($CabalExtraIncludeDir.Replace('\', '/'))"
     }
     if ($CabalExtraLibDir) {
-        $listBinArguments += "--extra-lib-dirs=$CabalExtraLibDir"
+        $listBinArguments += "--extra-lib-dirs=$($CabalExtraLibDir.Replace('\', '/'))"
+    }
+    if ($CabalConstraint) {
+        $listBinArguments += "--constraint=$CabalConstraint"
     }
     $sourceOutput = & cabal @listBinArguments
     if ($LASTEXITCODE -ne 0) {
