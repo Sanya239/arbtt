@@ -28,6 +28,8 @@ import           Data.Time.Clock
 import           Data.Time.Zones
 
 main = do
+    workspace <- lookupEnv "GITHUB_WORKSPACE"
+    maybe (return ()) setCurrentDirectory workspace
     setEnv "TZ" "UTC" -- to make tests reproducible
     defaultMain tests
 

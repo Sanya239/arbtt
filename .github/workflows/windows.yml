@@ -56,9 +56,13 @@ jobs:
           $ucrtRoot = Join-Path $env:MSYS2_ROOT 'ucrt64'
           $env:PATH = "$env:PATH;$(Join-Path $ucrtRoot 'bin')"
           $env:PKG_CONFIG_PATH = Join-Path $ucrtRoot 'lib\pkgconfig'
+          $env:TZDIR = Join-Path $env:MSYS2_ROOT 'usr\share\zoneinfo'
           $pcreImportLibrary = Join-Path $ucrtRoot 'lib\libpcre.dll.a'
           if (-not (Test-Path $pcreImportLibrary)) {
             throw "PCRE import library was not found at $pcreImportLibrary"
+          }
+          if (-not (Test-Path (Join-Path $env:TZDIR 'UTC'))) {
+            throw "The UTC timezone file was not found below $env:TZDIR"
           }
           pkg-config --modversion libpcre
           if ($LASTEXITCODE -ne 0) { throw 'pkg-config could not find libpcre.' }
