@@ -141,12 +141,13 @@ dumpSampleWithTimeZone tz tle = do
     mapM_ dumpWindow (cWindows (tlData tle))
 
 dumpSamples :: DumpFormat -> TimeLog CaptureData -> IO ()
-dumpSamples DFShow = mapM_ print
+dumpSamples DFShow samples = mapM_ print samples
 
 dumpSamples DFHuman samples = do
     tz <- loadLocalTZ
     mapM_ (dumpSampleWithTimeZone tz) samples
 
-dumpSamples DFJSON = enclose . sequence_ . intersperse (putStrLn ",") . map (LBS.putStr . encode)
+dumpSamples DFJSON samples =
+    enclose . sequence_ . intersperse (putStrLn ",") . map (LBS.putStr . encode) $ samples
   where
     enclose m = putStrLn "[" >> m >> putStrLn "]"
