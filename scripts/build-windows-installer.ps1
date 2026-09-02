@@ -1,5 +1,6 @@
 param(
     [string] $PcreDll = $env:PCRE_DLL,
+    [string] $TimeZoneDir = $env:TZDIR,
     [string] $Iscc = $env:ISCC,
     [string] $CabalExtraIncludeDir = $env:CABAL_EXTRA_INCLUDE_DIR,
     [string] $CabalExtraLibDir = $env:CABAL_EXTRA_LIB_DIR,
@@ -63,6 +64,16 @@ if (-not $PcreDll -or -not (Test-Path $PcreDll)) {
 }
 Copy-Item -Force $PcreDll (Join-Path $binDir 'libpcre-1.dll')
 
+if (-not $TimeZoneDir -or -not (Test-Path (Join-Path $TimeZoneDir 'UTC'))) {
+    throw 'The zoneinfo database was not found. Pass its directory using -TimeZoneDir or TZDIR.'
+}
+$stagedTimeZoneDir = Join-Path $stageDir 'share\zoneinfo'
+if (Test-Path $stagedTimeZoneDir) {
+    Remove-Item -Recurse -Force $stagedTimeZoneDir
+}
+New-Item -ItemType Directory -Force -Path $stagedTimeZoneDir | Out-Null
+Copy-Item -Recurse -Force (Join-Path $TimeZoneDir '*') $stagedTimeZoneDir
+
 $pcreRoot = Split-Path -Parent (Split-Path -Parent $PcreDll)
 $pcreLicense = Join-Path $pcreRoot 'share\licenses\pcre\LICENCE'
 if (-not (Test-Path $pcreLicense)) {
@@ -71,6 +82,7 @@ if (-not (Test-Path $pcreLicense)) {
 $thirdPartyLicenseDir = Join-Path $stageDir 'THIRD-PARTY-LICENSES'
 New-Item -ItemType Directory -Force -Path $thirdPartyLicenseDir | Out-Null
 Copy-Item -Force $pcreLicense (Join-Path $thirdPartyLicenseDir 'PCRE.txt')
+Copy-Item -Force (Join-Path $repoRoot 'licenses\UNICODE.txt') (Join-Path $thirdPartyLicenseDir 'UNICODE.txt')
 
 Copy-Item -Force (Join-Path $repoRoot 'categorize.cfg') (Join-Path $stageDir 'categorize.cfg')
 Copy-Item -Force (Join-Path $repoRoot 'README.Win32') (Join-Path $stageDir 'README.Win32.txt')

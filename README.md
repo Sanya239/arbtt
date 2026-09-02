@@ -103,12 +103,12 @@ programs. The resulting `arbtt-windows-x86_64` workflow artifact contains the
 installer.
 
 To build the installer locally, install GHC, Cabal, the 64-bit PCRE 8 development
-package and Inno Setup 6. Then run:
+package, an IANA zoneinfo database, and Inno Setup 6. Then run:
 
     cabal update
     cabal build all --enable-tests
     cabal test all
-    powershell -File scripts/build-windows-installer.ps1 -PcreDll C:\path\to\libpcre-1.dll -Iscc 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
+    powershell -File scripts/build-windows-installer.ps1 -PcreDll C:\path\to\libpcre-1.dll -TimeZoneDir C:\path\to\share\zoneinfo -Iscc 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe'
 
 The installer is written to `dist\installer`. It performs a per-user install,
 does not require administrator privileges, and offers optional PATH and startup

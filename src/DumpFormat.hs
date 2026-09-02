@@ -11,7 +11,7 @@ import Data.MyText (unpack, null, pack, Text)
 import Data.Aeson
 import qualified Data.ByteString.Lazy as LBS
 import Data.Time
-import Data.Time.Zones
+import LocalTimeZone
 import Data.Char
 import Data.Foldable (toList)
 import Control.Applicative ((<$>), (<|>), (<*>), pure)
@@ -91,10 +91,12 @@ readDumpFormat arg =
         _            -> Nothing
 
 dumpActivity :: TimeLog (CaptureData, ActivityData) -> IO ()
-dumpActivity = mapM_ go
+dumpActivity samples = do
+    tz <- loadLocalTZ
+    mapM_ (go tz) samples
  where
-    go tle = do
-        dumpHeader (tlTime tle) (cLastActivity cd)
+    go tz tle = do
+        dumpHeader tz (tlTime tle) (cLastActivity cd)
         dumpDesktop (cDesktop cd)
         mapM_ dumpWindow (cWindows cd)
         dumpTags ad
@@ -105,9 +107,8 @@ dumpTags :: ActivityData -> IO ()
 dumpTags = mapM_ go
   where go act = printf "    %s\n" (show act)
 
-dumpHeader :: UTCTime -> Integer -> IO ()
-dumpHeader time lastActivity = do
-    tz <- loadLocalTZ
+dumpHeader :: TZ -> UTCTime -> Integer -> IO ()
+dumpHeader tz time lastActivity = do
     printf "%s (%dms inactive):\n"
         (formatTime defaultTimeLocale "%F %X" (utcToLocalTimeTZ tz time))
         lastActivity
@@ -130,14 +131,21 @@ dumpDesktop d
 
 dumpSample :: TimeLogEntry CaptureData -> IO ()
 dumpSample tle = do
-    dumpHeader (tlTime tle) (cLastActivity (tlData tle))
+    tz <- loadLocalTZ
+    dumpSampleWithTimeZone tz tle
+
+dumpSampleWithTimeZone :: TZ -> TimeLogEntry CaptureData -> IO ()
+dumpSampleWithTimeZone tz tle = do
+    dumpHeader tz (tlTime tle) (cLastActivity (tlData tle))
     dumpDesktop (cDesktop (tlData tle))
     mapM_ dumpWindow (cWindows (tlData tle))
 
 dumpSamples :: DumpFormat -> TimeLog CaptureData -> IO ()
 dumpSamples DFShow = mapM_ print
 
-dumpSamples DFHuman = mapM_ dumpSample
+dumpSamples DFHuman samples = do
+    tz <- loadLocalTZ
+    mapM_ (dumpSampleWithTimeZone tz) samples
 
 dumpSamples DFJSON = enclose . sequence_ . intersperse (putStrLn ",") . map (LBS.putStr . encode)
   where

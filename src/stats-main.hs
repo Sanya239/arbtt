@@ -18,7 +18,7 @@ import System.ProgressBar
 import TermSize
 import qualified Data.MyText as T
 import qualified Data.Text.Lazy as TL
-import Data.Time.Zones
+import LocalTimeZone
 import Data.Time.LocalTime
 
 import TimeLog

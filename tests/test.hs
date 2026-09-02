@@ -25,7 +25,8 @@ import           Categorize
 import           TimeLog
 import           Data
 import           Data.Time.Clock
-import           Data.Time.Zones
+import           LocalTimeZone
+import           WindowsTimeZone
 
 main = do
     workspace <- lookupEnv "GITHUB_WORKSPACE"
@@ -34,7 +35,17 @@ main = do
     defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [goldenTests, regressionTests, parserTests]
+tests = testGroup "Tests" [goldenTests, regressionTests, parserTests, windowsTimeZoneTests]
+
+windowsTimeZoneTests :: TestTree
+windowsTimeZoneTests = testGroup "Windows time-zone mappings"
+    [ testCase "UTC" $
+        Just "Etc/UTC" @=? windowsToIana "UTC"
+    , testCase "Europe/Moscow" $
+        Just "Europe/Moscow" @=? windowsToIana "Russian Standard Time"
+    , testCase "Unknown identifier" $
+        Nothing @=? windowsToIana "Not a Windows time zone"
+    ]
 
 regressionTests :: TestTree
 regressionTests = testGroup "Regression tests"

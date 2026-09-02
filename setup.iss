@@ -56,10 +56,11 @@ Source: "{#SourceDir}\bin\arbtt-dump.exe"; DestDir: "{app}\bin"; Flags: ignoreve
 Source: "{#SourceDir}\bin\arbtt-import.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#SourceDir}\bin\arbtt-recover.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 Source: "{#SourceDir}\bin\libpcre-1.dll"; DestDir: "{app}\bin"; Flags: ignoreversion
+Source: "{#SourceDir}\share\zoneinfo\*"; DestDir: "{app}\share\zoneinfo"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#SourceDir}\categorize.cfg"; DestDir: "{userappdata}\arbtt"; Flags: onlyifdoesntexist uninsneveruninstall
 Source: "{#SourceDir}\README.Win32.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
-Source: "{#SourceDir}\THIRD-PARTY-LICENSES\PCRE.txt"; DestDir: "{app}\THIRD-PARTY-LICENSES"; Flags: ignoreversion
+Source: "{#SourceDir}\THIRD-PARTY-LICENSES\*"; DestDir: "{app}\THIRD-PARTY-LICENSES"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\Edit categorization rules"; Filename: "{sys}\notepad.exe"; Parameters: """{userappdata}\arbtt\categorize.cfg"""

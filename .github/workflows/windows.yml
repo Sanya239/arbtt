@@ -88,6 +88,7 @@ jobs:
           $pcreDll = Join-Path $ucrtRoot 'bin\libpcre-1.dll'
           .\scripts\build-windows-installer.ps1 `
             -PcreDll $pcreDll `
+            -TimeZoneDir (Join-Path $env:MSYS2_ROOT 'usr\share\zoneinfo') `
             -CabalExtraIncludeDir (Join-Path $ucrtRoot 'include') `
             -CabalExtraLibDir (Join-Path $ucrtRoot 'lib') `
             -CabalConstraint 'pcre-light +use-pkg-config'
@@ -119,6 +120,53 @@ jobs:
                 throw "$_ --version exited with $($programProcess.ExitCode)"
               }
             }
+
+          Remove-Item Env:TZ -ErrorAction SilentlyContinue
+          Remove-Item Env:TZDIR -ErrorAction SilentlyContinue
+          $testLog = (Resolve-Path 'tests\small.log').Path
+          $testConfig = (Resolve-Path 'tests\small.cfg').Path
+
+          $captureOutput = Join-Path $env:RUNNER_TEMP 'arbtt-capture-output.txt'
+          $captureError = Join-Path $env:RUNNER_TEMP 'arbtt-capture-error.txt'
+          $captureProcess = Start-Process -FilePath (Join-Path $installedBin 'arbtt-capture.exe') `
+            -ArgumentList '--dump' `
+            -RedirectStandardOutput $captureOutput -RedirectStandardError $captureError `
+            -Wait -PassThru
+          if ($captureProcess.ExitCode -ne 0) {
+            $errorText = Get-Content -Raw $captureError
+            throw "Installed arbtt-capture --dump failed with $($captureProcess.ExitCode): $errorText"
+          }
+          if (-not (Test-Path $captureOutput) -or (Get-Item $captureOutput).Length -eq 0) {
+            throw 'Installed arbtt-capture --dump did not produce output.'
+          }
+
+          $statsOutput = Join-Path $env:RUNNER_TEMP 'arbtt-stats-output.txt'
+          $statsError = Join-Path $env:RUNNER_TEMP 'arbtt-stats-error.txt'
+          $statsProcess = Start-Process -FilePath (Join-Path $installedBin 'arbtt-stats.exe') `
+            -ArgumentList @('--logfile', $testLog, '--categorizefile', $testConfig, '--total-time') `
+            -RedirectStandardOutput $statsOutput -RedirectStandardError $statsError `
+            -Wait -PassThru
+          if ($statsProcess.ExitCode -ne 0) {
+            $errorText = Get-Content -Raw $statsError
+            throw "Installed arbtt-stats failed with $($statsProcess.ExitCode): $errorText"
+          }
+          if ((Get-Content -Raw $statsOutput) -notmatch 'Total time per tag') {
+            throw 'Installed arbtt-stats did not produce the expected report.'
+          }
+
+          $dumpOutput = Join-Path $env:RUNNER_TEMP 'arbtt-dump-output.txt'
+          $dumpError = Join-Path $env:RUNNER_TEMP 'arbtt-dump-error.txt'
+          $dumpProcess = Start-Process -FilePath (Join-Path $installedBin 'arbtt-dump.exe') `
+            -ArgumentList @('--logfile', $testLog, '--last', '1') `
+            -RedirectStandardOutput $dumpOutput -RedirectStandardError $dumpError `
+            -Wait -PassThru
+          if ($dumpProcess.ExitCode -ne 0) {
+            $errorText = Get-Content -Raw $dumpError
+            throw "Installed arbtt-dump failed with $($dumpProcess.ExitCode): $errorText"
+          }
+          if (-not (Test-Path $dumpOutput) -or (Get-Item $dumpOutput).Length -eq 0) {
+            throw 'Installed arbtt-dump did not produce output.'
+          }
 
           $uninstaller = Join-Path $installDir 'unins000.exe'
           $uninstallerProcess = Start-Process -FilePath $uninstaller `

@@ -27,7 +27,7 @@ import qualified Data.Set as S
 import Data.MyText (Text,pack,unpack)
 import Data.Function (on)
 import Data.Time.Format(defaultTimeLocale)
-import Data.Time.Zones
+import LocalTimeZone
 import Control.Applicative
 import Control.Monad (forM)
 import Data.Strict ((:!:), Pair(..))

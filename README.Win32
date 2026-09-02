@@ -9,6 +9,9 @@ At this point, arbtt does not have a graphical user interface. You will see no i
 The programs use UTF-8 for text output. Windows Terminal and recent PowerShell
 versions display it correctly by default. In legacy cmd.exe, run `chcp 65001`
 before using the reporting tools if non-ASCII text is displayed incorrectly.
+The installer includes the IANA time-zone database and automatically translates
+the time zone configured in Windows. Set the TZ environment variable to an IANA
+name such as Europe/Berlin only if you want to override the system setting.
 
 Installation
 ============
@@ -28,7 +31,7 @@ installer asks Windows to close arbtt-capture when upgrading or uninstalling.
 Third-party component notice
 ============================
 
-arbtt ships with libpcre-1.dll from PCRE 8.45. PCRE is distributed under the
-3-clause BSD license. Its license is installed in the THIRD-PARTY-LICENSES
-directory. The licenses of the Haskell dependencies remain applicable to their
-respective components.
+arbtt ships with libpcre-1.dll from PCRE 8.45 and a Windows-to-IANA time-zone
+mapping derived from Unicode CLDR. Their licenses are installed in the
+THIRD-PARTY-LICENSES directory. The licenses of the Haskell dependencies remain
+applicable to their respective components.

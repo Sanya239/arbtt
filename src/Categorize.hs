@@ -33,7 +33,7 @@ import Text.Parsec
 import Text.Parsec.ExprFail
 import Text.Parsec.Token
 import Data.Time.Format(defaultTimeLocale, iso8601DateFormat)
-import Data.Time.Zones
+import LocalTimeZone
 import Debug.Trace
 import Text.Printf
 import GHC.Generics (Generic)

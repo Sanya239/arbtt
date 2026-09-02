@@ -28,6 +28,7 @@ extra-source-files:
     doc/arbtt.xml, doc/fptools.css, doc/Makefile,
     setup.iss,
     scripts/build-windows-installer.ps1,
+    licenses/UNICODE.txt,
     tests/*.log, tests/*.out, tests/*.in, tests/*.cfg
 
 executable arbtt-capture
@@ -54,6 +55,7 @@ executable arbtt-capture
         LeftFold
         LockFile
         DumpFormat
+        LocalTimeZone
         Paths_arbtt
 
     ghc-options: -rtsopts
@@ -69,8 +71,9 @@ executable arbtt-capture
             Capture.Win32
             Graphics.Win32.Window.Extra
             System.Win32.Mutex
+            WindowsTimeZone
         build-depends:
-             Win32
+             Win32, process
     else
         if os(darwin)
             cpp-options:    -DDARWIN
@@ -124,10 +127,13 @@ executable arbtt-stats
         Text.ParserCombinators.Parsec.ExprFail
         Text.Regex.PCRE.Light.Text
         TermSize
+        LocalTimeZone
         Paths_arbtt
     ghc-options: -rtsopts
     if os(windows)
         cpp-options:    -DWIN32
+        other-modules:  WindowsTimeZone
+        build-depends:  process
     else
         other-modules:
             System.Locale.SetLocale
@@ -159,10 +165,13 @@ executable arbtt-dump
         TimeLog
         DumpFormat
         Data.List.TakeR
+        LocalTimeZone
         Paths_arbtt
     ghc-options: -rtsopts
     if os(windows)
         cpp-options:    -DWIN32
+        other-modules:  WindowsTimeZone
+        build-depends:  process
     else
         other-modules:
             System.Locale.SetLocale
@@ -197,14 +206,16 @@ executable arbtt-import
         TimeLog
         LockFile
         DumpFormat
+        LocalTimeZone
         Paths_arbtt
     ghc-options: -rtsopts
     if os(windows)
         cpp-options:    -DWIN32
         other-modules:
             System.Win32.Mutex
+            WindowsTimeZone
         build-depends:
-            Win32
+            Win32, process
     else
         other-modules:
             System.Locale.SetLocale
@@ -268,6 +279,8 @@ test-suite test
     Text.Parsec.ExprFail
     Text.Regex.PCRE.Light.Text
     TimeLog
+    LocalTimeZone
+    WindowsTimeZone
   Build-depends:
       base >= 4.7 && < 5
       , tasty >= 0.7 && < 1.6
@@ -289,6 +302,8 @@ test-suite test
 
   if !os(windows)
     build-depends: unix
+  else
+    build-depends: process
 
   default-language: Haskell98
   build-tool-depends:
