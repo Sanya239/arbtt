@@ -63,7 +63,7 @@ Source: "{#SourceDir}\THIRD-PARTY-LICENSES\PCRE.txt"; DestDir: "{app}\THIRD-PART
 
 [Icons]
 Name: "{group}\Edit categorization rules"; Filename: "{sys}\notepad.exe"; Parameters: """{userappdata}\arbtt\categorize.cfg"""
-Name: "{group}\User guide"; Filename: "https://arbtt.nomeata.de/doc/users_guide/"; Flags: shellexec
+Name: "{group}\User guide"; Filename: "https://arbtt.nomeata.de/doc/users_guide/"
 Name: "{group}\Uninstall arbtt"; Filename: "{uninstallexe}"
 Name: "{userstartup}\arbtt-capture"; Filename: "{app}\bin\arbtt-capture.exe"; Comment: "Collects data for computer usage statistics"; Tasks: autorun
 
