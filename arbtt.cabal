@@ -203,6 +203,8 @@ executable arbtt-import
         cpp-options:    -DWIN32
         other-modules:
             System.Win32.Mutex
+        build-depends:
+            Win32
     else
         other-modules:
             System.Locale.SetLocale

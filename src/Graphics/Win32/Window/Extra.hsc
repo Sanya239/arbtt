@@ -17,6 +17,7 @@ import Control.Exception    ( bracket )
 import Control.Monad
 
 import Foreign
+import Foreign.C.Types (CIntPtr(..))
 
 import Data.IORef 
 
