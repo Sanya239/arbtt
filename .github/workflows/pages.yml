@@ -16,17 +16,18 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/cache@v1
-      name: Cache ~/.cabal/store
-      with:
-        path: ~/.cabal/store
-        key: cabal-store-${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('arbtt.cabal') }}
-        restore-keys: cabal-store-${{ runner.os }}-${{ matrix.ghc }}-
-
-    - uses: actions/checkout@v2
-    - uses: haskell/actions/setup@v1
+    - uses: actions/checkout@v6
+    - uses: haskell-actions/setup@v2
+      id: haskell
       with:
         ghc-version: ${{ matrix.ghc }}
+
+    - uses: actions/cache@v5
+      name: Cache ~/.cabal/store
+      with:
+        path: ${{ steps.haskell.outputs.cabal-store }}
+        key: cabal-store-${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('arbtt.cabal') }}
+        restore-keys: cabal-store-${{ runner.os }}-${{ matrix.ghc }}-
 
     - if: runner.os == 'Linux'
       run: sudo apt-get install libxss-dev libx11-dev libxrandr-dev libxinerama-dev
@@ -39,7 +40,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v6
     - run: sudo apt-get install xsltproc docbook-xsl
     - name: Build
       run: |
@@ -54,4 +55,3 @@ jobs:
         BRANCH: gh-pages
         FOLDER: website
         SINGLE-COMMIT: true
-
