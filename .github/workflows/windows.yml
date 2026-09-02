@@ -96,10 +96,14 @@ jobs:
         shell: pwsh
         run: |
           $version = (Select-String -Path arbtt.cabal -Pattern '^version:\s*(\S+)').Matches[0].Groups[1].Value
-          $installer = Resolve-Path "dist\installer\arbtt-setup-$version-windows-x86_64.exe"
+          $installer = (Resolve-Path "dist\installer\arbtt-setup-$version-windows-x86_64.exe").Path
           $installDir = Join-Path $env:RUNNER_TEMP 'arbtt-install-test'
-          & $installer /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /TASKS="modifypath" /DIR="$installDir"
-          if ($LASTEXITCODE -ne 0) { throw "Installer exited with $LASTEXITCODE" }
+          $installerProcess = Start-Process -FilePath $installer `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/TASKS=modifypath', "/DIR=$installDir") `
+            -Wait -PassThru
+          if ($installerProcess.ExitCode -ne 0) {
+            throw "Installer exited with $($installerProcess.ExitCode)"
+          }
 
           $installedBin = Join-Path $installDir 'bin'
           $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
@@ -109,12 +113,20 @@ jobs:
 
           @('arbtt-capture', 'arbtt-stats', 'arbtt-dump', 'arbtt-import', 'arbtt-recover') |
             ForEach-Object {
-              & (Join-Path $installDir "bin\$_.exe") --version
-              if ($LASTEXITCODE -ne 0) { throw "$_ --version exited with $LASTEXITCODE" }
+              $program = Join-Path $installDir "bin\$_.exe"
+              $programProcess = Start-Process -FilePath $program -ArgumentList '--version' -Wait -PassThru
+              if ($programProcess.ExitCode -ne 0) {
+                throw "$_ --version exited with $($programProcess.ExitCode)"
+              }
             }
 
-          & (Join-Path $installDir 'unins000.exe') /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
-          if ($LASTEXITCODE -ne 0) { throw "Uninstaller exited with $LASTEXITCODE" }
+          $uninstaller = Join-Path $installDir 'unins000.exe'
+          $uninstallerProcess = Start-Process -FilePath $uninstaller `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') `
+            -Wait -PassThru
+          if ($uninstallerProcess.ExitCode -ne 0) {
+            throw "Uninstaller exited with $($uninstallerProcess.ExitCode)"
+          }
 
           $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
           if (($userPath -split ';') -contains $installedBin) {
