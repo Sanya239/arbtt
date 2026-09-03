@@ -139,6 +139,11 @@ jobs:
           if (-not (Test-Path $captureOutput) -or (Get-Item $captureOutput).Length -eq 0) {
             throw 'Installed arbtt-capture --dump did not produce output.'
           }
+          $strictUtf8 = [System.Text.UTF8Encoding]::new($false, $true)
+          $captureText = [System.IO.File]::ReadAllText($captureOutput, $strictUtf8)
+          if ($captureText -match '\\Device\\HarddiskVolume') {
+            throw 'Installed arbtt-capture still reports full NT process paths.'
+          }
 
           $statsOutput = Join-Path $env:RUNNER_TEMP 'arbtt-stats-output.txt'
           $statsError = Join-Path $env:RUNNER_TEMP 'arbtt-stats-error.txt'
@@ -156,8 +161,9 @@ jobs:
 
           $dumpOutput = Join-Path $env:RUNNER_TEMP 'arbtt-dump-output.txt'
           $dumpError = Join-Path $env:RUNNER_TEMP 'arbtt-dump-error.txt'
+          $unicodeLog = (Resolve-Path 'tests\unicode.log').Path
           $dumpProcess = Start-Process -FilePath (Join-Path $installedBin 'arbtt-dump.exe') `
-            -ArgumentList @('--logfile', $testLog, '--last', '1') `
+            -ArgumentList @('--logfile', $unicodeLog, '--last', '1') `
             -RedirectStandardOutput $dumpOutput -RedirectStandardError $dumpError `
             -Wait -PassThru
           if ($dumpProcess.ExitCode -ne 0) {
@@ -166,6 +172,10 @@ jobs:
           }
           if (-not (Test-Path $dumpOutput) -or (Get-Item $dumpOutput).Length -eq 0) {
             throw 'Installed arbtt-dump did not produce output.'
+          }
+          $dumpText = [System.IO.File]::ReadAllText($dumpOutput, $strictUtf8)
+          if (-not $dumpText.Contains('aäα')) {
+            throw 'Installed arbtt-dump did not produce the expected Unicode title.'
           }
 
           $uninstaller = Join-Path $installDir 'unins000.exe'

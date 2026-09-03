@@ -3,6 +3,7 @@
 module Graphics.Win32.Window.Extra
 	( fetchWindowTitles
 	, getForegroundWindow
+	, getWindowProcessId
 	, getIdleTime
 	) where
 
@@ -70,45 +71,55 @@ instance Storable LASTINPUTINFO where
         t <- (#peek LASTINPUTINFO, dwTime) buf
         return $ LASTINPUTINFO t
 
-ignoreEPerm = tryJust (guard . isPermissionError)
+ignoreEPerm :: IO a -> IO (Either IOError a)
+ignoreEPerm = tryJust $ \err ->
+        if isPermissionError err then Just err else Nothing
 
-fetchWindowTitles :: IO [(HWND, String,String)]
+fetchWindowTitles :: IO [(HWND, DWORD, String, String)]
 fetchWindowTitles = do
-	resultRef <- newIORef []
-	callback <- mkEnumWindowsProc $ \winh _ ->
-	 do ignoreEPerm $ do
-                v <- c_IsWindowVisible winh -- only consider visible windows
-                when v $ do
-                proc <- alloca $ \pid_p -> do
-                        c_GetWindowThreadProcessId winh pid_p 
-                        pid <- peek pid_p
-                        bracket (openProcess pROCESS_QUERY_INFORMATION False pid) closeHandle $ \ph ->
-                                allocaArray0 (#const MAX_PATH) $ \c_test -> do
-                                        c_SetLastError (#const ERROR_SUCCESS)
-                                        r <- c_GetProcessImageFileName ph c_test ((#const MAX_PATH)+1)
-                                        err <- getLastError
-                                        if r == 0 && err /= (#const ERROR_SUCCESS)
-                                         then do hPutStrLn stderr $ "GetProcessImageFileName returned error " ++ show err ++ "."
-                                                 return ""
-                                         else peekTString c_test
-                                         
-		len <- c_GetWindowTextLength winh
-		str <- allocaArray0 len  $ \c_test -> do
-                        c_SetLastError (#const ERROR_SUCCESS)
-			r <- c_GetWindowText winh c_test (len+1)
-			err <- getLastError
-			if r == 0 && err /= (#const ERROR_SUCCESS)
-                         then do hPutStrLn stderr $ "GetWindowText returned error " ++ show err ++ "."
-                                 return ""
-			 else peekTString c_test
+        resultRef <- newIORef []
+        callback <- mkEnumWindowsProc $ \winh _ -> do
+            v <- c_IsWindowVisible winh -- only consider visible windows
+            when v $ do
+                pid <- getWindowProcessId winh
+                procResult <- ignoreEPerm $
+                    bracket (openProcess pROCESS_QUERY_INFORMATION False pid) closeHandle $ \ph ->
+                        allocaArray0 (#const MAX_PATH) $ \c_test -> do
+                            c_SetLastError (#const ERROR_SUCCESS)
+                            r <- c_GetProcessImageFileName ph c_test ((#const MAX_PATH)+1)
+                            err <- getLastError
+                            if r == 0 && err /= (#const ERROR_SUCCESS)
+                                then do
+                                    hPutStrLn stderr $ "GetProcessImageFileName returned error " ++ show err ++ "."
+                                    return ""
+                                else peekTString c_test
+                let proc = either (const "") id procResult
+
+                len <- c_GetWindowTextLength winh
+                str <- allocaArray0 len $ \c_test -> do
+                    c_SetLastError (#const ERROR_SUCCESS)
+                    r <- c_GetWindowText winh c_test (len+1)
+                    err <- getLastError
+                    if r == 0 && err /= (#const ERROR_SUCCESS)
+                        then do
+                            hPutStrLn stderr $ "GetWindowText returned error " ++ show err ++ "."
+                            return ""
+                        else peekTString c_test
                 unless (str `elem` ["", "Default IME"]) $ do -- Ignore some windows by default
-                        modifyIORef resultRef ((winh,str,proc):)
+                    modifyIORef resultRef ((winh,pid,str,proc):)
             return True
-	c_EnumWindows callback 0
-	readIORef resultRef
+        _ <- c_EnumWindows callback 0
+        freeHaskellFunPtr callback
+        readIORef resultRef
 
 getForegroundWindow :: IO HWND
 getForegroundWindow = c_GetForegroundWindow
+
+getWindowProcessId :: HWND -> IO DWORD
+getWindowProcessId winh = alloca $ \pid_p -> do
+        poke pid_p 0
+        _ <- c_GetWindowThreadProcessId winh pid_p
+        peek pid_p
 
 -- | Idle time in milliseconds
 getIdleTime :: IO Integer

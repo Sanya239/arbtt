@@ -2,12 +2,8 @@ module Capture.Win32 where
 
 import Data
 import qualified Data.MyText as T
-import Control.Monad
-import Control.Exception (bracket)
-import Control.Applicative
-import Data.Maybe
-import Data.Time.Clock
-import System.IO
+import Data.Maybe (listToMaybe)
+import System.FilePath.Windows (takeFileName)
 
 import Graphics.Win32.Window.Extra
 
@@ -17,11 +13,20 @@ setupCapture = do
 
 captureData :: IO CaptureData
 captureData = do
-        titles <- fetchWindowTitles
         foreground <- getForegroundWindow
+        foregroundPid <- getWindowProcessId foreground
+        titles <- fetchWindowTitles
 
-        let winData = [ fromWDv0 (h == foreground, T.pack t, T.pack p)
-                      | (h, t, p) <- titles]
+        let exactForeground = any (\(h, _, _, _) -> h == foreground) titles
+            fallbackForeground = listToMaybe
+                [ h | (h, pid, _, _) <- titles, pid == foregroundPid ]
+            isActive h = h == foreground ||
+                (not exactForeground && Just h == fallbackForeground)
+            winData =
+                [ fromWDv0 (isActive h, T.pack title,
+                            T.pack (takeFileName program))
+                | (h, _, title, program) <- titles
+                ]
 
         it <- fromIntegral `fmap` getIdleTime
 
